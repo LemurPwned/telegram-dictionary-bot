@@ -5,6 +5,8 @@
 [![Build Status](https://github.com/LemurPwned/telegram-dictionary/actions/workflows/dev.yml/badge.svg)](https://github.com/LemurPwned/telegram-dictionary/actions/workflows/dev.yml)
 [![codecov](https://codecov.io/gh/LemurPwned/telegram-dictionary/branch/main/graphs/badge.svg)](https://codecov.io/github/LemurPwned/telegram-dictionary)
 
+<img src="assets/img/lemur_hopper.png" align="middle" alt="drawing" style="width:300px;"/>
+
 Telegram bot for storing words and their definitions.
 
 -   Documentation: <https://LemurPwned.github.io/telegram-dictionary>
