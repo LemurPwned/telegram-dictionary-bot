@@ -1,5 +1,13 @@
+import logging
+import re
 
 from wiktionaryparser import WiktionaryParser
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.DEBUG
+)
+
 
 parser = WiktionaryParser()
 parser.set_default_language('french')
@@ -7,12 +15,17 @@ def assert_supported_lang_code(lang_code):
     if lang_code not in ["en", "es", "fr", "de", "it", "pt", "ru", "ja", "zh"]:
         raise ValueError("Language code not supported")
 
+def escape_markdown( text):
+    """
+    Helper function to escape telegram markup symbols
+    """
+    text = text.replace('“', '_').replace('”', '_')
+    escape_chars = '\[()+-.!~>=|'
+    return re.sub(r'([%s])' % escape_chars, r'\\\1', text)
 
 
 def wikitionary_request(word):
     word = parser.fetch(word, 'french')
-    # parser.exclude_part_of_speech('noun')
-    # parser.include_relation('alternative forms')
     return word
 
 
@@ -21,8 +34,13 @@ class WikiRequest:
         assert_supported_lang_code(lang_code)
         self.word = word
         self.lang_code = lang_code
-        self.wiki_response = wikitionary_request(word)[0]
-        print(self.wiki_response)
+        try:
+            self.wiki_response = wikitionary_request(word)[0]
+        except IndexError:
+            self.wiki_response = None
+            logging.error("No response from Wiktionary")
+            raise ValueError("No response from Wiktionary")
+        logging.debug(self.wiki_response)
 
     def __repr__(self):
         return self.style_response(self.wiki_response)
@@ -31,28 +49,28 @@ class WikiRequest:
         return self.style_response(self.wiki_response)
 
 
-    def style_definition(self, definition):
+    def style_definition(self, def_no, definition):
         """
         Markdown style definition
         """
-        part_of_speech = definition['partOfSpeech']
-        definition = definition['text']
+        part_of_speech = escape_markdown(definition['partOfSpeech'])
+        definition = escape_markdown("\n".join(definition['text']))
         styled_definition = f"""
-        *{part_of_speech}*
-        {definition}
-        """
+        {def_no}\. `{part_of_speech}`\n{definition}"""
         return styled_definition
+
 
     def style_response(self, wiki_response):
         """
         Markdown style response
         """
-        etymology = wiki_response['etymology']
-        definitions = "\n".join([self.style_definition(definition) for definition in wiki_response['definitions']])
+        etymology = escape_markdown(wiki_response['etymology'])
+        definitions = "\n".join([self.style_definition(i+1, definition) for i, definition in enumerate(wiki_response['definitions'])])
         styled_response = f"""
-        *{self.word}*
-        {etymology}\n
-        {definitions}\n
+        *`{self.word}`*\n
+        __Etymology__\n
+        {etymology}
+        __Definitions__\n{definitions}
         """
         return styled_response
 
